@@ -1,6 +1,3 @@
-Zaroor, yeh lijiye ek detailed `README.md` file aapke project ke liye.
-
-Yeh file Markdown format mein hai, jo GitHub aur doosri code hosting sites par sundar dikhti hai. Aap isse copy karke apne project mein `README.md` naam se save kar sakte hain.
 
 -----
 
