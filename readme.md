@@ -1,120 +1,110 @@
 
 -----
 
-# Miniature Electronic Health Record (EHR) System in C++
+#  Advanced Electronic Health Record (EHR) System in C++ (GUI Version)
 
-Ek console-based application jo healthcare data ko manage karne ke liye core data structures (Graphs, Hash Tables, Doubly Linked Lists) ki power ko demonstrate karta hai.
-
------
-
-## 📂 Project Ka Maksad (Purpose)
-
-Aaj ke daur mein healthcare industry mein data bahut tezi se badh raha hai. Doctor-patient ke relationships, aur har patient ki medical history ko aasaani se manage karna ek badi चुनौती (challenge) hai. Yeh project is problem ko solve karne ke liye C++ mein banaya gaya ek chhota sa EHR system hai.
-
-Yeh project dikhata hai ki kaise fundamental data structures ka istemal karke hum ek aesa system bana sakte hain jo scalable, efficient, aur well-organized ho.
+A **Graphical User Interface (GUI)**-based application demonstrating the power of core data structures (**Graphs, Hash Tables, Doubly Linked Lists**) in C++ to manage and visualize healthcare data, utilizing the **FLTK** library.
 
 -----
 
-## ✨ Features
+##  Project Purpose
 
-  - **Doctor aur Patient Management**: Naye doctors aur patients ko system mein add karna.
-  - **Doctor-Patient Linking**: Doctors aur patients ke beech many-to-many relationship ko model karna.
-  - **Chronological Medical History**: Har patient ki medical visits ka record (date, symptoms, diagnosis) ek timeline mein maintain karna.
-  - **Fast Record Access**: Patient ya doctor ko unki unique ID se turant search karna.
-  - **Symptom-Based Search**: Aise patients ko dhundhna jinhe ek specific symptom ho.
-  - **Menu-Driven Interface**: Command-line par aasan menu ke zariye system ko operate karna.
+In the modern era, healthcare data is growing exponentially. Managing doctor-patient relationships and maintaining each patient's detailed medical history efficiently presents a significant **challenge**. This project addresses this problem by creating a small, robust EHR system in C++.
+
+This system demonstrates how intelligently chosen fundamental data structures can be utilized to build a system that is **scalable, efficient, and well-organized**, offering both advanced querying and a visual interface.
 
 -----
 
-## 🏗️ System Design aur Data Structures Ka Istemal (The "Why")
+##  Advanced Features (GUI and Backend)
 
-Is project ka core iske data structures ka smart selection hai. Har data structure ek specific problem ko solve karne ke liye chuna gaya hai.
+The system includes advanced querying, reporting, and visualization features beyond basic data management:
+
+| Category | Feature | Description | Data Structure Benefit |
+| :--- | :--- | :--- | :--- |
+| **Interface** | **FLTK GUI** | The system runs in a graphical window with buttons and input fields, replacing the command-line menu. | Provides a simple, cross-platform Graphical User Experience (UX). |
+| **Search** | **Smart Keyword Search** | Searches records (Symptoms, Diagnosis, Prescription) for a **partial** and **case-insensitive** keyword match. | **Efficient querying** over multiple linked records for highly relevant results. |
+| **History** | **Enhanced Patient History** | Displays the **treating Doctor's Name, ID, and Specialization** alongside every medical record. | Links `MedicalRecord` (DLL) to `Doctor` (Hash Table) via `DoctorId`. |
+| **Visualization** | **Link Tree** | Visually represents the **many-to-many relationships** between Doctors and Patients (the Graph) in an easy-to-read text-based tree format. | Direct representation of the **Graph (Adjacency List)**. |
+| **Reporting** | **Tabular Data View** | Displays a summary of all Doctors, Patients, and Medical Records in a clear **tabular format**. | Efficient reporting by iterating over Hash Tables. |
+
+-----
+
+##  System Design and Data Structure Utilization (The "Why")
+
+The core strength of this project lies in the strategic selection of its data structures, ensuring the system is both performant and structurally sound.
 
 ### 1\. Hash Table (`std::unordered_map`) ⚡
 
-  - **Kya Ho Raha Hai?**: Hum do hash tables ka istemal kar rahe hain: ek patients ke liye aur ek doctors ke liye. Yeh har unique ID (e.g., "P101") ko uss patient ya doctor ke memory location (pointer) se map karta hai.
+  - **Role**: Provides **instant access** to entities based on their unique ID.
+  - **Why?**: Enables **O(1)** (constant time) average complexity for fetching any Doctor or Patient record, avoiding the need to search the entire list.
 
-  - **Kyu Ho Raha Hai?**: **Speed\!** Jab aapko kisi patient ki details chahiye, toh aapko poori list search karne ki zaroorat nahi hai. Hash table aapko average **O(1)** time mein, yaani instant, uss record tak pahuncha deta hai. Yeh bilkul ek book ke index ki tarah kaam karta hai.
+### 2\. Graph (Adjacency List) 
 
-    ```cpp
-    // Fast lookup using a key (ID)
-    std::unordered_map<std::string, Patient*> patients;
-    std::unordered_map<std::string, Doctor*> doctors;
-    ```
+  - **Role**: Models the **many-to-many relationships** between doctors and patients.
+  - **Why?**: In the real world, one doctor treats many patients, and one patient may see many doctors. The Graph structure (implemented as an Adjacency List) is the best way to represent this complex network.
 
-### 2\. Graph (Adjacency List) 🔗
+### 3\. Doubly Linked List (`MedicalRecord`) 
 
-  - **Kya Ho Raha Hai?**: Hum ek graph data structure ka istemal kar rahe hain jismein doctors aur patients **nodes (vertices)** hain, aur unke beech ka connection ek **edge** hai. Isse Adjacency List ka use karke implement kiya gaya hai.
-
-  - **Kyu Ho Raha Hai?**: Real-world mein, ek patient kai doctors se mil sakta hai, aur ek doctor kai patients ko dekh sakta hai. Yeh ek **many-to-many relationship** hai. Graph is tarah ke complex networks ko represent karne ke liye sabse best data structure hai.
-
-    ```cpp
-    // 'adjList' stores the network.
-    // Key: Doctor/Patient ID
-    // Value: A list of connected IDs
-    std::unordered_map<std::string, std::vector<std::string>> adjList;
-    ```
-
-### 3\. Doubly Linked List (`MedicalRecord`) 📜
-
-  - **Kya Ho Raha Hai?**: Har `Patient` object ke andar uski medical history ko store karne ke liye ek doubly linked list hai. Har node ek `MedicalRecord` (ek visit) hai, jismein `next` aur `prev` pointers hote hain.
-
-  - **Kyu Ho Raha Hai?**: Patient ki medical history **chronological** (time-based) hoti hai. Linked list is order ko maintain karne ke liye perfect hai. Naye record ko list ke aakhir mein add karna bahut efficient (**O(1)**) hota hai. Doubly linked hone ka fayda yeh hai ki aap history mein aage (latest) aur pichhe (oldest) dono taraf aasaani se jaa sakte hain.
-
-    ```cpp
-    struct Patient {
-        // ... other details
-        MedicalRecord *historyHead; // Points to the first visit
-        MedicalRecord *historyTail; // Points to the last visit
-    };
-    ```
+  - **Role**: Stores a Patient's **chronological medical history** (timeline).
+  - **Why?**: Linked Lists are perfect for maintaining sequential order. Adding a new record (node) to the end of the list is highly efficient (**O(1)**). The "Doubly" nature allows easy traversal both forward (latest history) and backward (oldest history).
 
 -----
 
-## 🚀 Kaise Compile aur Run Karein
+##  How to Compile and Run (FLTK Required)
 
-Aapko ek C++ compiler (jaise g++) ki zaroorat hogi.
+Since this application uses the **FLTK (Fast Light Tool Kit)** library for its GUI, you must install the necessary dependencies before compiling and running the program.
 
-1.  Code ko ek file mein save karein, jaise `main.cpp`.
+### Step 1: Install FLTK Dependencies (Linux/Ubuntu)
 
-2.  Apna terminal ya command prompt open karein.
+Execute this command in your terminal to install the FLTK library and its development headers:
 
-3.  File jahan save ki hai, uss directory mein jaayein.
+```sh
+# Update dependencies and install the libfltk1.3-dev package
+sudo apt update
+sudo apt install libfltk1.3-dev
+```
 
-4.  Compile karne ke liye yeh command chalayein:
+### Step 2: Compile the Code
+
+1.  Save the C++ code into a file, for example, `ehr_gui.cpp`.
+
+2.  Navigate to the directory where you saved the file.
+
+3.  Use the **`fltk-config`** utility to dynamically add the required compilation flags. This command automatically links the FLTK headers and linker flags:
 
     ```sh
-    g++ main.cpp -o ehr_system -std=c++17
+    g++ ehr_gui.cpp $(fltk-config --cxxflags --ldflags) -o ehr_gui -std=c++17
     ```
 
-5.  Program ko run karne ke liye yeh command chalayein:
+### Step 3: Run the Program
 
-    ```sh
-    ./ehr_system
-    ```
+Once compilation is successful, run the program using the following command:
 
-    Iske baad aapko screen par menu dikhega aur aap system ko use kar sakte hain.
+```sh
+./ehr_gui
+```
+
+The system's **GUI window** will appear on your screen, allowing you to manage and query the data using the graphical elements.
 
 -----
 
-## 💻 Code Ka Structure
+##  Code Structure
 
-`main.cpp` file mein code ko teen hisso mein organize kiya gaya hai:
+The code within the `ehr_gui.cpp` file is organized into three main sections:
 
-1.  **Data Structure Definitions**:
+1.  **Backend (Core Logic) Classes**:
 
-      - `struct MedicalRecord`: Ek visit ka data store karta hai (date, symptoms, etc.). Yeh linked list ka node hai.
-      - `struct Patient`: Patient ki details aur uski medical history ki list ka head/tail pointer rakhta hai.
-      - `struct Doctor`: Doctor ki details store karta hai.
+      * `struct MedicalRecord`, `struct Patient`, `struct Doctor`: The fundamental data structures defining the entities.
+      * `class EHRSystem`: The core class containing the Hash Tables, Graph (Adjacency List), and all data management functions.
 
-2.  **EHRSystem Class**:
+2.  **Frontend (FLTK GUI)**:
 
-      - Yeh class poore system ka dimaag (brain) hai.
-      - Iske andar saare data structures (hash tables, graph) aur unko manage karne wale functions (addDoctor, addMedicalRecord, etc.) hain.
-      - Memory management ke liye Destructor (`~EHRSystem`) bhi ismein hai.
+      * Setup and configuration of FLTK widgets (`Fl_Window`, `Fl_Button`, `Fl_Input`) to create the user interface.
+      * **Callback Functions**: These are triggered by GUI buttons and interface the user actions with the underlying `EHRSystem` class functions.
 
 3.  **main() Function**:
 
-      - Yeh program ka entry point hai.
-      - Yeh user ko menu dikhata hai aur user ke input ke hisaab se `EHRSystem` class ke functions ko call karta hai.
-      - Yeh User Interface (UI) ka kaam karta hai.
+      * Handles FLTK scheme and window initialization.
+      * Loads **Sample Data** upon startup.
+      * Manages the placement and configuration of all GUI widgets.
+      * Initiates the GUI event loop using `Fl::run()`.
