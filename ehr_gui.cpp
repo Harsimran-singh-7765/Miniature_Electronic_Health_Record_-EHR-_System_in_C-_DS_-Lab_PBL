@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip> 
+#include <queue> 
+#include <limits> 
+#include <set>
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Button.H>
@@ -15,35 +18,37 @@
 #include <FL/Fl_Text_Display.H>
 #include <FL/Fl_Text_Buffer.H>
 
+using namespace std;
+
 /*
- * PROJECT: ADVANCED EHR SYSTEM v2.1 (PATCHED)
+ * PROJECT: ADVANCED EHR SYSTEM v3.0 (DIJKSTRA EDITION)
  * ---------------------------------------------------------
  * DEVELOPER CONTRIBUTIONS:
- * [1] Harsimran (Lead): Core Architecture, System Integration
+ * [1] Harsimran (Lead): Core Architecture & Algorithms
  * [2] Kapish: Patient Data Structures 
  * [3] Medhansh: Doctor Registry & Network Linkage 
- * [4] Aryan: Advanced Search Algorithms & Reporting
+ * [4] Aryan: Advanced Analytics (Dijkstra Implementation)
  * [5] Ronith: Frontend GUI & Event Handling
  * ---------------------------------------------------------
  */
 
 // ======================================================================
-// MODULE 1: PATIENT DATA STRUCTURES (Developer: Kapish)
+// MODULE 1: PATIENT DATA STRUCTURES (Kapish)
 // ======================================================================
 
 struct MedicalRecord {
-    std::string date, symptoms, diagnosis, prescription, doctorId;
+    string date, symptoms, diagnosis, prescription, doctorId;
     MedicalRecord *next;
     MedicalRecord *prev;
-    MedicalRecord(std::string dt, std::string sym, std::string dx, std::string px, std::string docId)
+    MedicalRecord(string dt, string sym, string dx, string px, string docId)
         : date(dt), symptoms(sym), diagnosis(dx), prescription(px), doctorId(docId), next(nullptr), prev(nullptr) {}
 };
 
 struct Patient {
-    std::string id, name;
+    string id, name;
     MedicalRecord *historyHead;
     MedicalRecord *historyTail;
-    Patient(std::string patientId, std::string patientName)
+    Patient(string patientId, string patientName)
         : id(patientId), name(patientName), historyHead(nullptr), historyTail(nullptr) {}
     ~Patient() {
         MedicalRecord *current = historyHead;
@@ -56,30 +61,30 @@ struct Patient {
 };
 
 // ======================================================================
-// MODULE 2: PROVIDER STRUCTURES (Developer: Medhansh)
+// MODULE 2: PROVIDER STRUCTURES (Medhansh)
 // ======================================================================
 
 struct Doctor {
-    std::string id, name, specialization;
-    Doctor(std::string docId, std::string docName, std::string spec)
+    string id, name, specialization;
+    Doctor(string docId, string docName, string spec)
         : id(docId), name(docName), specialization(spec) {}
 };
 
 // ======================================================================
-// MODULE 3: CORE SYSTEM ARCHITECTURE (Developer: Harsimran)
+// MODULE 3: CORE SYSTEM ARCHITECTURE (Harsimran & Aryan)
 // ======================================================================
 
 class EHRSystem {
 private:
-    std::unordered_map<std::string, Patient*> patients;
-    std::unordered_map<std::string, Doctor*> doctors;
-    std::unordered_map<std::string, std::vector<std::string>> adjList; 
+    unordered_map<string, Patient*> patients;
+    unordered_map<string, Doctor*> doctors;
+    unordered_map<string, vector<string>> adjList; 
 
-    bool smartSearch(const std::string& text, const std::string& query) {
-        std::string lowerText = text; std::string lowerQuery = query;
-        std::transform(lowerText.begin(), lowerText.end(), lowerText.begin(), ::tolower);
-        std::transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(), ::tolower);
-        return lowerText.find(lowerQuery) != std::string::npos;
+    bool smartSearch(const string& text, const string& query) {
+        string lowerText = text; string lowerQuery = query;
+        transform(lowerText.begin(), lowerText.end(), lowerText.begin(), ::tolower);
+        transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(), ::tolower);
+        return lowerText.find(lowerQuery) != string::npos;
     }
 
 public:
@@ -88,30 +93,30 @@ public:
         for (auto& pair : doctors) delete pair.second;
     }
     
-    void addDoctor(const std::string& id, const std::string& name, const std::string& spec) {
+    void addDoctor(const string& id, const string& name, const string& spec) {
         if (doctors.count(id)) { fl_message("Error: Doctor ID %s already exists.", id.c_str()); return; }
         doctors[id] = new Doctor(id, name, spec);
         adjList[id] = {};
         fl_message("Success: Doctor %s registered.", name.c_str());
     }
 
-    void addPatient(const std::string& id, const std::string& name) {
+    void addPatient(const string& id, const string& name) {
         if (patients.count(id)) { fl_message("Error: Patient ID %s already exists.", id.c_str()); return; }
         patients[id] = new Patient(id, name);
         adjList[id] = {};
         fl_message("Success: Patient %s registered.", name.c_str());
     }
 
-    void linkDoctorPatient(const std::string& docId, const std::string& patId) {
-        if (!doctors.count(docId) || !patients.count(patId)) { fl_message("Error: Invalid Doctor or Patient ID."); return; }
+    void linkDoctorPatient(const string& docId, const string& patId) {
+        if (!doctors.count(docId) || !patients.count(patId)) { fl_message("Error: Invalid IDs."); return; }
         adjList[docId].push_back(patId);
         adjList[patId].push_back(docId);
-        fl_message("Network: Linked Doctor %s with Patient %s", docId.c_str(), patId.c_str());
+        fl_message("Network: Linked %s with %s", docId.c_str(), patId.c_str());
     }
 
-    void addMedicalRecord(const std::string& patId, const std::string& date,
-                          const std::string& sym, const std::string& dx, const std::string& px,
-                          const std::string& docId) {
+    void addMedicalRecord(const string& patId, const string& date,
+                          const string& sym, const string& dx, const string& px,
+                          const string& docId) {
         if (!patients.count(patId)) { fl_message("Error: Patient not found."); return; }
         Patient* patient = patients.at(patId);
         MedicalRecord* newRec = new MedicalRecord(date, sym, dx, px, docId);
@@ -127,11 +132,11 @@ public:
         fl_message("Clinical Note: Record added for %s", patient->name.c_str());
     }
 
-    std::string getPatientHistory(const std::string& patId) {
-        std::ostringstream oss;
+    string getPatientHistory(const string& patId) {
+        ostringstream oss;
         if (!patients.count(patId)) return "System: Patient not found.";
         Patient* p = patients.at(patId);
-        if (!p->historyHead) return "System: No medical records found for " + p->name;
+        if (!p->historyHead) return "System: No medical records found.";
 
         oss << "CLINICAL HISTORY REPORT: " << p->name << " (ID: " << p->id << ")\n";
         oss << "========================================================\n";
@@ -149,8 +154,8 @@ public:
         return oss.str();
     }
 
-    std::string findPatientsByKeyword(const std::string& keyword) {
-        std::ostringstream oss;
+    string findPatientsByKeyword(const string& keyword) {
+        ostringstream oss;
         if (keyword.empty()) return "System: Please enter a search term.";
         oss << "SEARCH RESULTS FOR: '" << keyword << "'\n";
         oss << "==========================================\n";
@@ -168,26 +173,26 @@ public:
                 cur = cur->next;
             }
         }
-        return found ? oss.str() : "System: No records found matching criteria.";
+        return found ? oss.str() : "System: No records found.";
     }
 
-    std::string getAllDataInTable() {
-        std::ostringstream oss;
-        oss << std::left;
+    string getAllDataInTable() {
+        ostringstream oss;
+        oss << left;
         oss << "=== REGISTERED PHYSICIANS ===\n";
-        oss << std::setw(12) << "ID" << std::setw(25) << "Name" << "Specialization\n";
+        oss << setw(12) << "ID" << setw(25) << "Name" << "Specialization\n";
         oss << "------------------------------------------------------------\n";
-        for (const auto& pair : doctors) oss << std::setw(12) << pair.second->id << std::setw(25) << pair.second->name << pair.second->specialization << "\n";
+        for (const auto& pair : doctors) oss << setw(12) << pair.second->id << setw(25) << pair.second->name << pair.second->specialization << "\n";
         
         oss << "\n=== REGISTERED PATIENTS ===\n";
-        oss << std::setw(12) << "ID" << "Name\n";
+        oss << setw(12) << "ID" << "Name\n";
         oss << "------------------------------------------------------------\n";
-        for (const auto& pair : patients) oss << std::setw(12) << pair.second->id << pair.second->name << "\n";
+        for (const auto& pair : patients) oss << setw(12) << pair.second->id << pair.second->name << "\n";
         return oss.str();
     }
     
-    std::string getLinkTree() {
-        std::ostringstream oss;
+    string getLinkTree() {
+        ostringstream oss;
         oss << "--- NETWORK LINKAGE TREE ---\n";
         for (const auto& pair : doctors) {
             if (!adjList.at(pair.first).empty()) {
@@ -199,15 +204,78 @@ public:
         }
         return oss.str();
     }
+
+    // --- DIJKSTRA'S ALGORITHM IMPLEMENTATION (Aryan) ---
+    // Finds shortest referral chain between any two entities
+    string findShortestPath(const string& startId, const string& endId) {
+        if (adjList.find(startId) == adjList.end() || adjList.find(endId) == adjList.end()) {
+            return "Error: Start or End ID does not exist in the network.";
+        }
+
+        // Priority Queue for Dijkstra: {distance, nodeId}
+        // Using set to act as Min-Priority Queue for simplicity in C++
+        set<pair<int, string>> pq;
+        unordered_map<string, int> dist;
+        unordered_map<string, string> parent;
+
+        // Initialize distances
+        for (auto const& [key, val] : adjList) dist[key] = numeric_limits<int>::max();
+        
+        dist[startId] = 0;
+        pq.insert({0, startId});
+
+        while (!pq.empty()) {
+            string u = pq.begin()->second;
+            pq.erase(pq.begin());
+
+            if (u == endId) break; // Found target
+
+            for (const string& v : adjList[u]) {
+                if (dist[u] + 1 < dist[v]) {
+                    pq.erase({dist[v], v});
+                    dist[v] = dist[u] + 1;
+                    parent[v] = u;
+                    pq.insert({dist[v], v});
+                }
+            }
+        }
+
+        if (dist[endId] == numeric_limits<int>::max()) 
+            return "No connection found between " + startId + " and " + endId;
+
+        // Reconstruct Path
+        vector<string> path;
+        string curr = endId;
+        while (curr != startId) {
+            path.push_back(curr);
+            curr = parent[curr];
+        }
+        path.push_back(startId);
+        reverse(path.begin(), path.end());
+
+        // Format Output
+        ostringstream oss;
+        oss << "SHORTEST REFERRAL CHAIN (" << dist[endId] << " hops):\n";
+        oss << "------------------------------------------\n";
+        for (size_t i = 0; i < path.size(); ++i) {
+            string id = path[i];
+            string name = (doctors.count(id)) ? doctors[id]->name : patients[id]->name;
+            string role = (doctors.count(id)) ? "[Doctor]" : "[Patient]";
+            
+            if (i > 0) oss << "   |\n   v\n";
+            oss << role << " " << name << " (" << id << ")\n";
+        }
+        return oss.str();
+    }
 };
 
 // ======================================================================
-// MODULE 4: FRONTEND UTILITIES (Developer: Ronith)
+// MODULE 4: FRONTEND UTILITIES (Ronith)
 // ======================================================================
 
 EHRSystem ehr;
 
-void createReportWindow(const char* title, const std::string& content) {
+void createReportWindow(const char* title, const string& content) {
     Fl_Window* win = new Fl_Window(550, 450, title);
     Fl_Text_Buffer* buff = new Fl_Text_Buffer();
     buff->text(content.c_str());
@@ -222,18 +290,8 @@ void createReportWindow(const char* title, const std::string& content) {
 
 void addRecordCallback(Fl_Widget*, void* data) {
     Fl_Input** in = (Fl_Input**)data;
-    
-    // FIX APPLIED HERE: Correct Mapping of Inputs
-    // Array Order from Main: [0]PatID, [1]DocID, [2]Date, [3]Sym, [4]Dx, [5]Rx
-    
-    ehr.addMedicalRecord(
-        in[0]->value(), // Patient ID
-        in[2]->value(), // Date
-        in[3]->value(), // Symptoms
-        in[4]->value(), // Diagnosis
-        in[5]->value(), // Prescription
-        in[1]->value()  // Doctor ID (Last Argument)
-    );
+    // Map inputs: PatID, Date, Sym, Dx, Rx, DocID
+    ehr.addMedicalRecord(in[0]->value(), in[2]->value(), in[3]->value(), in[4]->value(), in[5]->value(), in[1]->value());
 }
 
 void viewHistoryCallback(Fl_Widget*, void* data) {
@@ -254,17 +312,23 @@ void showLinkTreeCallback(Fl_Widget*, void*) {
     createReportWindow("Physician-Patient Network", ehr.getLinkTree());
 }
 
+void findPathCallback(Fl_Widget*, void* data) {
+    Fl_Input** in = (Fl_Input**)data;
+    string start = in[0]->value();
+    string end = in[1]->value();
+    createReportWindow("Referral Path Analysis", ehr.findShortestPath(start, end));
+}
+
 // ======================================================================
-// MODULE 5: MAIN APPLICATION LOOP (Developer: Harsimran)
+// MODULE 5: MAIN APPLICATION LOOP (Harsimran)
 // ======================================================================
 
 int main() {
     Fl::scheme("gtk+"); 
     Fl::set_color(FL_BACKGROUND_COLOR, 0xF2F2F200);
 
-    Fl_Window *win = new Fl_Window(700, 650, "Integrated EHR Management System v2.1");
+    Fl_Window *win = new Fl_Window(700, 750, "Integrated EHR Management System v3.0");
 
-    // Layout Constants
     const int PADDING = 20;
     const int WIDGET_H = 28;
     const int BUTTON_H = 38;
@@ -340,8 +404,6 @@ int main() {
     Fl_Box* h4 = new Fl_Box(FL_NO_BOX, x_right, y, 250, 25, "Clinical Record Entry"); 
     h4->labelfont(FL_BOLD); h4->align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE); y+=30;
     
-    // NOTE: These inputs are stored in array rIn below.
-    // Order: [0]PatID, [1]DocID, [2]Date, [3]Sym, [4]Dx, [5]Rx
     Fl_Input* r1 = new Fl_Input(x_right+LABEL_W, y, INPUT_W, WIDGET_H, "Patient ID:"); y+=WIDGET_H+8;
     Fl_Input* r2 = new Fl_Input(x_right+LABEL_W, y, INPUT_W, WIDGET_H, "Doctor ID:"); y+=WIDGET_H+8;
     Fl_Input* r3 = new Fl_Input(x_right+LABEL_W, y, INPUT_W, WIDGET_H, "Date (YYYY-MM-DD):"); y+=WIDGET_H+8;
@@ -372,25 +434,58 @@ int main() {
     bSearch->color(FL_DARK_MAGENTA); bSearch->labelcolor(FL_WHITE);
     bSearch->callback(smartSearchCallback, q2); y+=BUTTON_H;
 
+    // 6. Network Path Finder (Dijkstra)
+    Fl_Box* h6 = new Fl_Box(FL_NO_BOX, x_right, y, 250, 25, "Referral Path Finder (Dijkstra)"); 
+    h6->labelfont(FL_BOLD); h6->align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE); y+=30;
+
+    Fl_Input* pathStart = new Fl_Input(x_right+LABEL_W, y, INPUT_W, WIDGET_H, "Source ID:"); y+=WIDGET_H+8;
+    Fl_Input* pathEnd = new Fl_Input(x_right+LABEL_W, y, INPUT_W, WIDGET_H, "Target ID:"); y+=WIDGET_H+8;
+    
+    Fl_Button* bPath = new Fl_Button(x_right, y, LABEL_W+INPUT_W, BUTTON_H, "Find Shortest Path");
+    bPath->color(FL_DARK_RED); bPath->labelcolor(FL_WHITE);
+    
+    static Fl_Input* pathIn[] = {pathStart, pathEnd};
+    bPath->callback(findPathCallback, pathIn);
+    y+=BUTTON_H;
+
     // Window Setup
-    int final_h = std::max(max_y_left, y) + PADDING;
+    int final_h = max(max_y_left, y) + PADDING;
     int final_w = x_right + LABEL_W + INPUT_W + PADDING;
     
     win->size(final_w, final_h);
     win->resizable(0); 
+
     win->end();
     win->show();
-    // Initialize Sample Data
+
+
+
     ehr.addDoctor("D001", "Dr. Ronith", "Cardiologist");
     ehr.addDoctor("D002", "Dr. Harsimran", "Dermatologist");
+    ehr.addDoctor("D003", "Dr. Aryan", "Neurologist");
+    ehr.addDoctor("D004", "Dr. Stranger", "Surgeon");
+    
+   
     ehr.addPatient("P101", "Kapish S.");
     ehr.addPatient("P102", "Medhansh G.");
-    ehr.linkDoctorPatient("D001", "P101");
-    ehr.linkDoctorPatient("D002", "P101");
+    ehr.addPatient("P103", "John Doe");
+
+
+    ehr.linkDoctorPatient("D001", "P101"); 
+    
+    ehr.linkDoctorPatient("D002", "P101"); 
+    
+   
     ehr.linkDoctorPatient("D002", "P102");
-    ehr.addMedicalRecord("P101", "2025-09-20", "Chest Pain", "Angina", "Aspirin 81mg", "D001");
-    ehr.addMedicalRecord("P101", "2025-09-25", "Itchy Rash", "Eczema", "Hydrocortisone", "D002");
-
-
+   
+    ehr.linkDoctorPatient("D003", "P102");
+    
+    ehr.linkDoctorPatient("D003", "P103");
+   
+    ehr.linkDoctorPatient("D004", "P103");
+    
+    
+    ehr.addMedicalRecord("P101", "2025-09-20", "Chest Pain", "Angina", "Aspirin", "D001");
+    ehr.addMedicalRecord("P101", "2025-09-25", "Rash", "Eczema", "Cream", "D002");
     return Fl::run();
 }
