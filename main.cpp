@@ -1,45 +1,34 @@
-// main.cpp
 #include <iostream>
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <limits>
 #include <algorithm>
+#include <set>
+#include <sstream>
+#include <iomanip>
 
-// To handle the newline character left by `cin`
-void clearInputBuffer() {
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-}
+using namespace std;
 
-// ======================================================================
-// 1. DATA STRUCTURE DEFINITIONS
-// ======================================================================
-
-// Node for the Doubly Linked List (stores a single medical visit)
+// Developer: Kapish
 struct MedicalRecord {
-    std::string date;
-    std::string symptoms;
-    std::string diagnosis;
-    std::string prescription;
+    string date, symptoms, diagnosis, prescription, doctorId;
     MedicalRecord *next;
     MedicalRecord *prev;
 
-    // Constructor for easy creation
-    MedicalRecord(std::string dt, std::string sym, std::string dx, std::string px)
-        : date(dt), symptoms(sym), diagnosis(dx), prescription(px), next(nullptr), prev(nullptr) {}
+    MedicalRecord(string dt, string sym, string dx, string px, string docId)
+        : date(dt), symptoms(sym), diagnosis(dx), prescription(px), doctorId(docId), next(nullptr), prev(nullptr) {}
 };
 
-// Patient Structure
+// Developer: Kapish
 struct Patient {
-    std::string id;
-    std::string name;
-    MedicalRecord *historyHead; // Head of the doubly linked list
-    MedicalRecord *historyTail; // Tail for efficient appending
+    string id, name;
+    MedicalRecord *historyHead;
+    MedicalRecord *historyTail;
 
-    Patient(std::string patientId, std::string patientName)
+    Patient(string patientId, string patientName)
         : id(patientId), name(patientName), historyHead(nullptr), historyTail(nullptr) {}
 
-    // Destructor to free the linked list memory
     ~Patient() {
         MedicalRecord *current = historyHead;
         while (current != nullptr) {
@@ -50,292 +39,242 @@ struct Patient {
     }
 };
 
-// Doctor Structure
+// Developer: Medhansh
 struct Doctor {
-    std::string id;
-    std::string name;
-    std::string specialization;
+    string id, name, specialization;
 
-    Doctor(std::string docId, std::string docName, std::string spec)
+    Doctor(string docId, string docName, string spec)
         : id(docId), name(docName), specialization(spec) {}
 };
 
-// ======================================================================
-// 2. MAIN EHR SYSTEM CLASS
-// ======================================================================
-
 class EHRSystem {
 private:
-    // Hash Tables for fast O(1) average time access
-    std::unordered_map<std::string, Patient*> patients;
-    std::unordered_map<std::string, Doctor*> doctors;
+    unordered_map<string, Patient*> patients;
+    unordered_map<string, Doctor*> doctors;
+    unordered_map<string, vector<string>> adjList;
 
-    // Graph (Adjacency List) to represent doctor-patient relationships
-    std::unordered_map<std::string, std::vector<std::string>> adjList;
+    bool smartSearch(const string& text, const string& query) {
+        string lowerText = text; string lowerQuery = query;
+        transform(lowerText.begin(), lowerText.end(), lowerText.begin(), ::tolower);
+        transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(), ::tolower);
+        return lowerText.find(lowerQuery) != string::npos;
+    }
 
 public:
-    // Destructor to clean up all dynamically allocated memory
     ~EHRSystem() {
-        for (auto const& [id, patientPtr] : patients) {
-            delete patientPtr;
-        }
-        for (auto const& [id, doctorPtr] : doctors) {
-            delete doctorPtr;
-        }
+        for (auto const& [id, ptr] : patients) delete ptr;
+        for (auto const& [id, ptr] : doctors) delete ptr;
     }
 
-    // --- Core Functionalities ---
-
-    void addDoctor(const std::string& id, const std::string& name, const std::string& specialization) {
-        if (doctors.find(id) != doctors.end()) {
-            std::cout << "Error: Doctor with ID '" << id << "' already exists.\n";
-            return;
-        }
-        Doctor* newDoctor = new Doctor(id, name, specialization);
-        doctors[id] = newDoctor;
-        adjList[id] = {}; // Initialize adjacency list for the new doctor
-        std::cout << "✅ Doctor '" << name << "' added successfully.\n";
+    void addDoctor(const string& id, const string& name, const string& spec) {
+        if (doctors.count(id)) { cout << "Error: Doctor ID exists.\n"; return; }
+        doctors[id] = new Doctor(id, name, spec);
+        adjList[id] = {};
+        cout << "Success: Doctor registered.\n";
     }
 
-    void addPatient(const std::string& id, const std::string& name) {
-        if (patients.find(id) != patients.end()) {
-            std::cout << "Error: Patient with ID '" << id << "' already exists.\n";
-            return;
-        }
-        Patient* newPatient = new Patient(id, name);
-        patients[id] = newPatient;
-        adjList[id] = {}; // Initialize adjacency list for the new patient
-        std::cout << "✅ Patient '" << name << "' added successfully.\n";
+    void addPatient(const string& id, const string& name) {
+        if (patients.count(id)) { cout << "Error: Patient ID exists.\n"; return; }
+        patients[id] = new Patient(id, name);
+        adjList[id] = {};
+        cout << "Success: Patient registered.\n";
     }
 
-    void linkDoctorPatient(const std::string& docId, const std::string& patientId) {
-        if (doctors.find(docId) == doctors.end()) {
-            std::cout << "Error: Doctor with ID '" << docId << "' not found.\n";
-            return;
-        }
-        if (patients.find(patientId) == patients.end()) {
-            std::cout << "Error: Patient with ID '" << patientId << "' not found.\n";
-            return;
-        }
-
-        // Add edge in both directions for the many-to-many relationship
-        adjList[docId].push_back(patientId);
-        adjList[patientId].push_back(docId);
-        std::cout << "🔗 Successfully linked Dr. " << doctors[docId]->name << " and Patient " << patients[patientId]->name << ".\n";
+    void linkDoctorPatient(const string& docId, const string& patId) {
+        if (!doctors.count(docId) || !patients.count(patId)) { cout << "Error: Invalid IDs.\n"; return; }
+        adjList[docId].push_back(patId);
+        adjList[patId].push_back(docId);
+        cout << "Network: Linked Doctor and Patient.\n";
     }
 
-    void addMedicalRecord(const std::string& patientId, const std::string& date, const std::string& symptoms, const std::string& diagnosis, const std::string& prescription) {
-        if (patients.find(patientId) == patients.end()) {
-            std::cout << "Error: Patient with ID '" << patientId << "' not found.\n";
-            return;
-        }
+    void addMedicalRecord(const string& patId, const string& docId, const string& date, const string& sym, const string& dx, const string& px) {
+        if (!patients.count(patId)) { cout << "Error: Patient not found.\n"; return; }
+        Patient* p = patients[patId];
+        MedicalRecord* newRec = new MedicalRecord(date, sym, dx, px, docId);
 
-        Patient* patient = patients[patientId];
-        MedicalRecord* newRecord = new MedicalRecord(date, symptoms, diagnosis, prescription);
-
-        // Append to the patient's doubly linked list
-        if (patient->historyHead == nullptr) {
-            // List is empty
-            patient->historyHead = newRecord;
-            patient->historyTail = newRecord;
+        if (!p->historyHead) {
+            p->historyHead = newRec;
+            p->historyTail = newRec;
         } else {
-            // Append to the end
-            patient->historyTail->next = newRecord;
-            newRecord->prev = patient->historyTail;
-            patient->historyTail = newRecord;
+            p->historyTail->next = newRec;
+            newRec->prev = p->historyTail;
+            p->historyTail = newRec;
         }
-        std::cout << "📝 Medical record added for patient '" << patient->name << "'.\n";
+        cout << "Record added to history.\n";
     }
 
-    // --- Display and Search Functionalities ---
-
-    void displayPatientHistory(const std::string& patientId) {
-        if (patients.find(patientId) == patients.end()) {
-            std::cout << "Error: Patient with ID '" << patientId << "' not found.\n";
-            return;
-        }
-
-        Patient* patient = patients[patientId];
-        std::cout << "\n--- Medical History for " << patient->name << " (ID: " << patient->id << ") ---\n";
-        
-        if (patient->historyHead == nullptr) {
-            std::cout << "No medical records found.\n";
-            return;
-        }
-
-        MedicalRecord* current = patient->historyHead;
-        int recordCount = 1;
-        while (current != nullptr) {
-            std::cout << "Record " << recordCount++ << ":\n";
-            std::cout << "  Date:         " << current->date << "\n";
-            std::cout << "  Symptoms:     " << current->symptoms << "\n";
-            std::cout << "  Diagnosis:    " << current->diagnosis << "\n";
-            std::cout << "  Prescription: " << current->prescription << "\n";
-            std::cout << "-------------------------------------------\n";
-            current = current->next;
+    void displayPatientHistory(const string& patId) {
+        if (!patients.count(patId)) { cout << "Patient not found.\n"; return; }
+        Patient* p = patients[patId];
+        cout << "\n--- History: " << p->name << " ---\n";
+        MedicalRecord* cur = p->historyHead;
+        while (cur) {
+            cout << "Date: " << cur->date << " | Doc: " << cur->doctorId << "\n";
+            cout << "Sym: " << cur->symptoms << " | Dx: " << cur->diagnosis << " | Rx: " << cur->prescription << "\n";
+            cout << "--------------------------------\n";
+            cur = cur->next;
         }
     }
-    
-    void displayPatientInfo(const std::string& patientId) {
-        if (patients.find(patientId) == patients.end()) {
-            std::cout << "Error: Patient with ID '" << patientId << "' not found.\n";
-            return;
-        }
-        Patient* p = patients[patientId];
-        std::cout << "\n--- Patient Information ---\n";
-        std::cout << "ID:   " << p->id << "\n";
-        std::cout << "Name: " << p->name << "\n";
-        std::cout << "Consulted Doctors:\n";
-        
-        bool hasDoctors = false;
-        for (const auto& connectedId : adjList[patientId]) {
-            if (doctors.count(connectedId)) { // Check if the connected node is a doctor
-                std::cout << " - Dr. " << doctors[connectedId]->name << " (" << doctors[connectedId]->specialization << ")\n";
-                hasDoctors = true;
-            }
-        }
-        if (!hasDoctors) {
-            std::cout << " - None on record.\n";
-        }
-        std::cout << "---------------------------\n";
-    }
 
-    void findPatientsBySymptom(const std::string& symptom) {
-        std::vector<Patient*> foundPatients;
-        std::string lowerSymptom = symptom;
-        std::transform(lowerSymptom.begin(), lowerSymptom.end(), lowerSymptom.begin(), ::tolower);
-
-        // Iterate through all patients (hash table)
-        for (auto const& [id, patientPtr] : patients) {
-            // Iterate through their medical history (linked list)
-            MedicalRecord* current = patientPtr->historyHead;
-            while (current != nullptr) {
-                std::string lowerRecordSymptoms = current->symptoms;
-                std::transform(lowerRecordSymptoms.begin(), lowerRecordSymptoms.end(), lowerRecordSymptoms.begin(), ::tolower);
-                
-                // Simple substring search
-                if (lowerRecordSymptoms.find(lowerSymptom) != std::string::npos) {
-                    foundPatients.push_back(patientPtr);
-                    break; // Found a match, no need to check other records for this patient
+    void searchBySymptom(const string& keyword) {
+        cout << "\n--- Search Results: " << keyword << " ---\n";
+        bool found = false;
+        for (auto const& [id, p] : patients) {
+            MedicalRecord* cur = p->historyHead;
+            while (cur) {
+                if (smartSearch(cur->symptoms, keyword)) {
+                    cout << "Match: " << p->name << " (ID: " << p->id << ") - " << cur->symptoms << "\n";
+                    found = true;
+                    break; 
                 }
-                current = current->next;
+                cur = cur->next;
+            }
+        }
+        if (!found) cout << "No matches found.\n";
+    }
+
+    void showDatabase() {
+        cout << "\n--- Doctors ---\n";
+        for (auto const& [id, d] : doctors) cout << id << ": " << d->name << " (" << d->specialization << ")\n";
+        cout << "\n--- Patients ---\n";
+        for (auto const& [id, p] : patients) cout << id << ": " << p->name << "\n";
+    }
+
+    // Developer: Harsimran (Dijkstra's Algorithm)
+    void findShortestReferralPath(const string& startId, const string& endId) {
+        if (adjList.find(startId) == adjList.end() || adjList.find(endId) == adjList.end()) {
+            cout << "Error: IDs not found in network.\n";
+            return;
+        }
+
+        set<pair<int, string>> pq;
+        unordered_map<string, int> dist;
+        unordered_map<string, string> parent;
+
+        for (auto const& [key, val] : adjList) dist[key] = numeric_limits<int>::max();
+
+        dist[startId] = 0;
+        pq.insert({0, startId});
+
+        while (!pq.empty()) {
+            string u = pq.begin()->second;
+            pq.erase(pq.begin());
+
+            if (u == endId) break;
+
+            for (const string& v : adjList[u]) {
+                if (dist[u] + 1 < dist[v]) {
+                    pq.erase({dist[v], v});
+                    dist[v] = dist[u] + 1;
+                    parent[v] = u;
+                    pq.insert({dist[v], v});
+                }
             }
         }
 
-        std::cout << "\n--- Patients with symptom: '" << symptom << "' ---\n";
-        if (foundPatients.empty()) {
-            std::cout << "No patients found with this symptom.\n";
-        } else {
-            for (const auto& patient : foundPatients) {
-                std::cout << " - " << patient->name << " (ID: " << patient->id << ")\n";
-            }
+        if (dist[endId] == numeric_limits<int>::max()) {
+            cout << "No connection exists between these two.\n";
+            return;
         }
-        std::cout << "-------------------------------------------\n";
+
+        vector<string> path;
+        string curr = endId;
+        while (curr != startId) {
+            path.push_back(curr);
+            curr = parent[curr];
+        }
+        path.push_back(startId);
+        reverse(path.begin(), path.end());
+
+        cout << "\n--- Shortest Network Path (Dijkstra) ---\n";
+        cout << "Hops: " << dist[endId] << "\n";
+        for (size_t i = 0; i < path.size(); ++i) {
+            string name = doctors.count(path[i]) ? doctors[path[i]]->name : patients[path[i]]->name;
+            string role = doctors.count(path[i]) ? "[Dr]" : "[Pat]";
+            cout << (i==0 ? "" : " -> ") << role << " " << name;
+        }
+        cout << "\n";
     }
 };
 
-// ======================================================================
-// 3. USER INTERFACE (MENU)
-// ======================================================================
-
-void printMenu() {
-    std::cout << "\n===== Miniature EHR System Menu =====\n";
-    std::cout << "1. Add Doctor\n";
-    std::cout << "2. Add Patient\n";
-    std::cout << "3. Link Doctor and Patient\n";
-    std::cout << "4. Add Patient Medical Record\n";
-    std::cout << "5. View Patient Medical History\n";
-    std::cout << "6. View Patient Info and Doctors\n";
-    std::cout << "7. Find Patients by Symptom\n";
-    std::cout << "0. Exit\n";
-    std::cout << "=====================================\n";
-    std::cout << "Enter your choice: ";
+void clearBuffer() {
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
 
 int main() {
     EHRSystem ehr;
-    int choice;
-
     
+    // Sample Data
     ehr.addDoctor("D001", "Ronith", "Cardiologist");
     ehr.addDoctor("D002", "Harsimran", "Dermatologist");
+    ehr.addDoctor("D003", "Aryan", "Neurologist");
     ehr.addPatient("P101", "Kapish");
     ehr.addPatient("P102", "Medhansh");
-    ehr.linkDoctorPatient("D001", "P101");
-    ehr.linkDoctorPatient("D002", "P101");
-    ehr.linkDoctorPatient("D002", "P102");
-    ehr.addMedicalRecord("P101", "2025-09-20", "Chest pain, dizziness", "Angina", "Aspirin");
-    ehr.addMedicalRecord("P101", "2025-09-25", "Itchy rash on arm", "Eczema", "Hydrocortisone cream");
-    ehr.addMedicalRecord("P102", "2025-09-24", "Dry skin, persistent rash", "Psoriasis", "Topical Steroids");
+    ehr.addPatient("P103", "John");
+
+    ehr.linkDoctorPatient("D001", "P101"); // Ronith - Kapish
+    ehr.linkDoctorPatient("D002", "P101"); // Harsimran - Kapish
+    ehr.linkDoctorPatient("D002", "P102"); // Harsimran - Medhansh
+    ehr.linkDoctorPatient("D003", "P102"); // Aryan - Medhansh
+    ehr.linkDoctorPatient("D003", "P103"); // Aryan - John
     
-    std::cout << "\n--- System pre-populated with sample data. ---";
+    ehr.addMedicalRecord("P101", "D001", "2025-10-20", "Chest Pain", "Angina", "Aspirin");
 
+    int choice;
     do {
-        printMenu();
-        std::cin >> choice;
-        clearInputBuffer(); 
-        std::string id, name, spec, docId, patId, date, sym, dx, px;
+        cout << "\n=== EHR Console System ===\n";
+        cout << "1. Add Doctor\n2. Add Patient\n3. Link Network\n4. Add Record\n";
+        cout << "5. View History\n6. Search Symptoms\n7. Show Database\n";
+        cout << "8. Referral Path Finder (Dijkstra)\n0. Exit\nChoice: ";
+        cin >> choice;
+        clearBuffer();
 
-        switch (choice) {
+        string id, name, spec, doc, pat, dt, sym, dx, rx;
+
+        switch(choice) {
             case 1:
-                std::cout << "Enter Doctor ID: ";
-                std::getline(std::cin, id);
-                std::cout << "Enter Doctor Name: ";
-                std::getline(std::cin, name);
-                std::cout << "Enter Specialization: ";
-                std::getline(std::cin, spec);
+                cout << "ID: "; getline(cin, id);
+                cout << "Name: "; getline(cin, name);
+                cout << "Spec: "; getline(cin, spec);
                 ehr.addDoctor(id, name, spec);
                 break;
             case 2:
-                std::cout << "Enter Patient ID: ";
-                std::getline(std::cin, id);
-                std::cout << "Enter Patient Name: ";
-                std::getline(std::cin, name);
+                cout << "ID: "; getline(cin, id);
+                cout << "Name: "; getline(cin, name);
                 ehr.addPatient(id, name);
                 break;
             case 3:
-                std::cout << "Enter Doctor ID: ";
-                std::getline(std::cin, docId);
-                std::cout << "Enter Patient ID: ";
-                std::getline(std::cin, patId);
-                ehr.linkDoctorPatient(docId, patId);
+                cout << "Doc ID: "; getline(cin, doc);
+                cout << "Pat ID: "; getline(cin, pat);
+                ehr.linkDoctorPatient(doc, pat);
                 break;
             case 4:
-                std::cout << "Enter Patient ID: ";
-                std::getline(std::cin, patId);
-                std::cout << "Enter Date (YYYY-MM-DD): ";
-                std::getline(std::cin, date);
-                std::cout << "Enter Symptoms: ";
-                std::getline(std::cin, sym);
-                std::cout << "Enter Diagnosis: ";
-                std::getline(std::cin, dx);
-                std::cout << "Enter Prescription: ";
-                std::getline(std::cin, px);
-                ehr.addMedicalRecord(patId, date, sym, dx, px);
+                cout << "Pat ID: "; getline(cin, pat);
+                cout << "Doc ID: "; getline(cin, doc);
+                cout << "Date: "; getline(cin, dt);
+                cout << "Sym: "; getline(cin, sym);
+                cout << "Dx: "; getline(cin, dx);
+                cout << "Rx: "; getline(cin, rx);
+                ehr.addMedicalRecord(pat, doc, dt, sym, dx, rx);
                 break;
             case 5:
-                std::cout << "Enter Patient ID to view history: ";
-                std::getline(std::cin, patId);
-                ehr.displayPatientHistory(patId);
+                cout << "Pat ID: "; getline(cin, pat);
+                ehr.displayPatientHistory(pat);
                 break;
             case 6:
-                std::cout << "Enter Patient ID to view info: ";
-                std::getline(std::cin, patId);
-                ehr.displayPatientInfo(patId);
+                cout << "Keyword: "; getline(cin, sym);
+                ehr.searchBySymptom(sym);
                 break;
             case 7:
-                std::cout << "Enter symptom to search for: ";
-                std::getline(std::cin, sym);
-                ehr.findPatientsBySymptom(sym);
+                ehr.showDatabase();
                 break;
-            case 0:
-                std::cout << "Exiting system. Goodbye!\n";
+            case 8: // Dijkstra Feature
+                cout << "Start ID: "; getline(cin, doc);
+                cout << "End ID: "; getline(cin, pat);
+                ehr.findShortestReferralPath(doc, pat);
                 break;
-            default:
-                std::cout << "Invalid choice. Please try again.\n";
-                break;
+            case 0: cout << "Exiting...\n"; break;
         }
-
     } while (choice != 0);
 
     return 0;
