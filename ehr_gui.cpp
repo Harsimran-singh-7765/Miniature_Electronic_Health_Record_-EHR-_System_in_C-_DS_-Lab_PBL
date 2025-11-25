@@ -27,7 +27,7 @@ using namespace std;
  * [1] Harsimran (Lead): Core Architecture & Algorithms
  * [2] Kapish: Patient Data Structures 
  * [3] Medhansh: Doctor Registry & Network Linkage 
- * [4] Aryan: Advanced Analytics (Dijkstra Implementation)
+ * [4] Harsimran: Advanced Analytics (Dijkstra Implementation)
  * [5] Ronith: Frontend GUI & Event Handling
  * ---------------------------------------------------------
  */
@@ -205,8 +205,8 @@ public:
         return oss.str();
     }
 
-    // --- DIJKSTRA'S ALGORITHM IMPLEMENTATION (Aryan) ---
-    // Finds shortest referral chain between any two entities
+    // --- DIJKSTRA'S ALGORITHM IMPLEMENTATION (Harsimran) ---
+   
     string findShortestPath(const string& startId, const string& endId) {
         if (adjList.find(startId) == adjList.end() || adjList.find(endId) == adjList.end()) {
             return "Error: Start or End ID does not exist in the network.";
@@ -269,9 +269,8 @@ public:
     }
 };
 
-// ======================================================================
-// MODULE 4: FRONTEND UTILITIES (Ronith)
-// ======================================================================
+
+// FRONTEND UTILITIES (Ronith)
 
 EHRSystem ehr;
 
@@ -319,9 +318,7 @@ void findPathCallback(Fl_Widget*, void* data) {
     createReportWindow("Referral Path Analysis", ehr.findShortestPath(start, end));
 }
 
-// ======================================================================
-// MODULE 5: MAIN APPLICATION LOOP (Harsimran)
-// ======================================================================
+// MAIN  LOOP (Harsimran)
 
 int main() {
     Fl::scheme("gtk+"); 
