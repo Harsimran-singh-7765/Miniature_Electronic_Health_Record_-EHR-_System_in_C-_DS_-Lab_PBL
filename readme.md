@@ -54,6 +54,23 @@ This project does not simply store data; it structures data for optimal performa
 * **Smart Symptom Search:** * *Algorithm:* Linear Search with String Transformation.
     * *Logic:* Iterates through patient histories, converts text to lowercase, and performs substring matching to find records by keywords (e.g., "cardio", "pain").
 
+
+###  Dijkstra’s Algorithm (Shortest Path)
+* **Feature:** "Referral Path Finder"
+* **Goal:** Find the shortest connection chain between any two people (e.g., Doctor A -> Patient X -> Doctor B).
+* **Logic:**
+    1.  Initialize all distances to Infinity ($\infty$), Source to 0.
+    2.  Push Source into a **Min-Heap**.
+    3.  Extract the node with the smallest distance.
+    4.  **Relaxation:** Check all neighbors. If a shorter path is found via the current node, update the distance and push to Heap.
+    5.  **Backtracking:** Use a `parent` map to reconstruct the path from Target to Source.
+* *Note:* Currently, all edge weights are set to **1 (Uniform Cost)**. Using Dijkstra instead of BFS makes the system "future-proof" for features like *Trust Scores* or *Physical Distances*.
+
+### 🔍 Smart Search (String Transformation)
+* **Goal:** Case-insensitive substring matching for symptoms.
+* **Complexity:** Linear Scan **O(N*M)** where N is records and M is string length.
+
+---
 ---
 
 
